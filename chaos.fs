@@ -25,7 +25,7 @@ let count (board:float[,]) x y inter min_color max_color layers =
       let c = inter a b (float x) num
       c / num + (sum (layer + 1) (2.0 * num))
     match layer with
-    | e when e > layers -> 0
+    | e when e > layers  -> 0
     | e -> complicated
   let sth = (sum layers 1.0) / (2.0 - 2.0 ** (float layers-1.0))
   let r = (1.0 - sth) * (float ir) + sth * (float ar)
