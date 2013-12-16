@@ -9,64 +9,50 @@ let generate x (dice:Random) =
   
 let choose_inter a =
   match a with
-    _ -> fun l r x h -> (1.0 - x / h) * l + x * r;; //linear
-    
-(*let count (board:float[,]) x y inter min_color max_color layers =
-  let (ir, ig, ib) = min_color
-  let (ar, ag, ab) = max_color
-  let rec sum layer num =
-    let complicated =
-      let xl = if x % num = 0 then x else x / num * num
-      let yl = if y % num = 0 then y else y / num * num
-      let xm = if x % num = 0 then x else (x + num) / num * num
-      let ym = if y % num = 0 then y else (y + num) / num * num
-      let a = inter board.[xl, yl] board.[xl, ym] (y div  ) (float y) num
-      let b = inter board.[xm, yl] board.[xm, ym] (float y) num
-      let c = inter a b (float x) num
-      c / num + (sum (layer + 1) (2.0 * num))
-    match layer with
-    | e when e > layers -> 0
-    | e -> complicated
-  let sth = (sum layers 1.0) / (2.0 - 2.0 ** (float layers-1.0))
-  let r = (1.0 - sth) * (float ir) + sth * (float ar)
-  let g = (1.0 - sth) * (float ig) + sth * (float ag)
-  let b = (1.0 - sth) * (float ib) + sth * (float ab)
-  Color.FromArgb(r, g, b);;*)
+    |1 -> fun l r x -> (1.0 - x) * l + x * r //linear
+    |_ -> fun l r x -> ((2.0 * l - 2.0 * r) * x * x * x + (3.0 * r - 3.0 * l) * x * x + l);;
   
-let rec quadra i j x y (board:float[,]) layers =
+let quadra i j x y (board:float[,]) layers =
   let rec inside layer num =
-    match num with
+    match layer with
     | 0 -> []
     | x -> 
-      let xl = if x % num = 0 then x else x / num * num
-      let yl = if y % num = 0 then y else y / num * num
-      let xm = if x % num = 0 then x else (x + num) / num * num
-      let ym = if y % num = 0 then y else (y + num) / num * num
-      (board.[xl, yl], board.[xm, yl], board.[xl, ym], board.[xm, ym], (float i)/(float num), (float j)/(float num))::inside (layer - 1) (num * 2)
-  inside layers 1;;
+      let xl = if num = 0 then i else i / num * num
+      let yl = if num = 0 then j else j / num * num
+      let xm = xl + num
+      let ym = yl + num
+      let nextnum = if num = 0 then 1 else num * 2
+      let xproportion = if num = 0 then 0.0 else float(i % num) / (float num)
+      let yproportion = if num = 0 then 0.0 else float(j % num) / (float num)
+      (board.[xl, yl], board.[xm, yl], board.[xl, ym], board.[xm, ym], xproportion, yproportion)::(inside (layer - 1) nextnum)
+  inside layers 0;;
   
 let count inter list =
-  let rec inside list =
+  let rec inside list acc =
     match list with
-    |[] -> []
-    |(lg, pg, ld, pd, xp, yp)::rest -> (1.0)::(inside rest)
-  inside list;;
+    |[] -> acc
+    |(lg, pg, ld, pd, xp, yp)::rest -> 
+      let a = inter lg ld yp
+      let b = inter pg pd yp
+      let c = inter a b xp
+      inside rest (c::acc)
+  inside list [];;
   
 let sum list =
   let rec inside list acc max now =
     match list with
     |[]   -> acc / max
-    |h::t -> inside t (acc + h) (max + now) (now / 2.0)
+    |h::t -> inside t (acc + h * now) (max + now) (now / 2.0)
   inside list 0.0 0.0 1.0;;
   
 let color min_color max_color proportion =
   let (ir, ig, ib) = min_color
   let (ar, ag, ab) = max_color
-  let r = int(((1.0 - proportion) * (float ir) + proportion * (float ar)) * 255.0)
-  let g = int(((1.0 - proportion) * (float ig) + proportion * (float ag)) * 255.0)
-  let b = int(((1.0 - proportion) * (float ib) + proportion * (float ab)) * 255.0)
+  //printf "\n%f\n" proportion
+  let r = int((1.0 - proportion) * (float ir) + proportion * (float ar))
+  let g = int((1.0 - proportion) * (float ig) + proportion * (float ag))
+  let b = int((1.0 - proportion) * (float ib) + proportion * (float ab))
   Color.FromArgb(r, g, b);;
-  
   
 let make_noise board inter (x:int) (y:int) min_color max_color layers =
   let bitmap = new Bitmap(x, y, PixelFormat.Format32bppArgb)
@@ -75,10 +61,10 @@ let make_noise board inter (x:int) (y:int) min_color max_color layers =
         bitmap.SetPixel(i, j, quadra i j x y board layers |> count inter |> sum |> color min_color max_color)
   bitmap;;
   
-let main = 
+let main =
   let dice  = new Random()
-  let board = generate 512 dice
-  let interpolation = choose_inter 1
-  let bitmap = make_noise board interpolation 512 512 (0, 0, 0) (255, 255, 255) 1
+  let board = generate 513 dice
+  let interpolation = choose_inter 2
+  let bitmap = make_noise board interpolation 512 512 (0, 0, 0) (255, 255, 255) 8
   ("/home/izrafel/Dokumenty/Funkcyjne/Projekt/chaos.bmp", ImageFormat.Bmp) |> bitmap.Save;;
   
