@@ -11,7 +11,7 @@ let generate x (dice:Random) =
 let choose_inter a =
   match a with
     |0 -> fun l r x -> (r - l) * x + l //linear
-    |1 -> fun l r x -> (r - l) * sin (3.14 * x / 2.0) + l//sinusoidal
+    |1 -> fun l r x -> (r - l) * (sin (3.14 * (x - 0.5))/2.0 + 0.5) + l//sinusoidal
     |2 -> fun l r x -> (r - l) * (3.0 * x * x - 2.0 * x * x * x) + l //polynomial 3rd degree
     |_ -> fun l r x -> (r - l) * (6.0 * x * x * x * x * x - 15.0 * x * x * x * x + 10.0 * x * x * x) + l;; //polynomial 5th degree
    
